@@ -1,0 +1,170 @@
+
+---
+title: "Bridges to Well-being"
+subtitle: "The impact of: Vaccines, Water and Wealth in Transforming Global Health"
+author: "Daragh Goode"
+date: "2024-04-22"
+format:
+  html:
+    theme: sandstone
+    backgroundcolor: lavender
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+
+---
+<style>
+h1, h2, h3 {
+    color: #deb887; /* Burlywood color for a mellow brown appearance */
+}
+/* This sets all heading levels (h1, h2, h3) to the same color. 
+   If you want different shades, you can specify different colors for each. */
+</style>
+
+
+# Introduction
+As part of the search for **improved global health**, the journey of developing a single vaccine dose can indicate both progress and disparity. This dashboard explores these narratives through relative visualisations that represent the intricate relationship among: health services, vaccination rates, basic water access, economic indicators and their relative overall impact on life expectancy. By examining this data from multiple nations, we unveil the global challenges and progress in the pursuit towards well-being.
+
+# Global Map - Illustrating survival rate of infants with Hep-B 3rd dosage
+```{r}
+#| label: setup
+#| include: false
+
+# libraries
+library(tidyverse)
+library(plotly)
+
+# data
+unicef_indicator_1_2_ <- read_csv("unicef_indicator_1 (2).csv")
+unicef_metadata_2_ <- read_csv("unicef_metadata (2).csv")
+
+#transformations
+myjoin <- full_join(unicef_metadata_2_, unicef_indicator_1_2_, by = c("year"= "time_period", "country" = "country"))
+myjoin_2022 <- filter(myjoin, year == 2022)
+myjoin_countries <- filter(myjoin, 
+                           !country %in% c("China", "France", "Ireland", "India", "Chad", 
+                                           "Mexico", "Papua New Guinea", "South Africa", "Ukraine", 
+                                           "United Kingdom", "United States", "Central African Republic", 
+                                           "Brazil"))
+myjoin_2022_countries <- filter(myjoin_2022,
+                              country %in% c("China", "France", "Ireland", "India", "Chad", 
+                                                                                        "Mexico", "Papua New Guinea", "South Africa", "Ukraine", 
+                                                                                        "United Kingdom", "United States", "Central African Republic", 
+                                                                                        "Brazil"))
+
+```
+
+```{r}
+#| fig-cap: "<em>This world map visualisation represents a global overview of the hepatitis B vaccine coverage in infants in 2022. This change among nations indicates the successes and struggles in global immunisation efforts. This highlights the disparities between countries. Regions like China and the US show high coverage rates, demonstrating the power of defined healthcare systems and relative policy support. In contrast, countries like the Central African Republic and Chad face significant challenges. This has developed since the years 2000-2022, showing increases even in the lower-performing regions and countries.</em>"
+
+map_world <- map_data("world")
+map_join_2022 <- full_join(myjoin_2022, map_world, by = c("country" = "region"))
+
+
+ggplot(data = map_join_2022) +
+  aes(x = long, y = lat, group = group, fill = obs_value) +
+  geom_polygon() +
+  scale_fill_gradient(low = "orange", high ="red", na.value ="black") +
+  labs(
+    title = "World map showing surviving infants who received the 3rd dose of Hep-B in 2022",
+    subtitle = "Countries in black have no data for 2022",
+    x = "Longitude",
+    y = "Latitude",
+    fill = "%"
+  ) +
+  theme_minimal()
+```
+
+# Time-Series - Relevant 3rd Hep-B dosage uptake (2000-2022)
+```{r}
+#| fig-cap: "<em>This line graph traces the percentage of surviving infants receiving the third dose of the hepatitis B vaccine from 2000 to 2022. This chart shows a clear path of progress. This timeline showcases the progress in immunisation coverage, driven by global initiatives. In saying this the development in this area is far from completion. There are clear fluctuating rates in some regions/countries, underscoring the ongoing challenges in public health efforts.</em>"
+
+filtered_data_2 <- myjoin %>% 
+  filter(country %in% c("China", "France", "Ireland", "India", "Chad", 
+                        "Mexico", "Papua New Guinea", "South Africa", "Ukraine", 
+                        "United Kingdom", "United States", "Central African Republic", 
+                        "Brazil") & year >= 2000)
+
+ggplot(data = filtered_data_2) +
+  aes(x = year, y = obs_value, group = country, colour = country) +
+  geom_line() +
+  labs(
+    title = "Time series of evolution of Hep-B dosage after 2000",
+    subtitle = "Legend shows selected countries",
+    x = "% of HEP-B 3rd dosage",
+    y = "Year",
+    fill = "%"
+  ) +
+  theme_minimal()
+```
+
+# Scatterplot - GDP per capita and life expectancy, a correlation?
+
+```{r}
+#| fig-cap: "<em>This scatter plot draws a clear picture of the relationship between the GDP per capita and life expectancy among the selected countries for 2018. The economic power of the United States and France, compared to the growing economies of India and China. This visualisation uncovers the complex mix between a nation's wealth and the health of its people. Notably, countries with higher GDP per capita generally show longer life expectancies. This highlights the important role of economic development in developing health. In saying this, certain outliers remind us that wealth is not the sole indicator of well-being, suggesting the importance of health policies and service access.</em>"
+
+
+filtered_data_3 <- myjoin %>% 
+  filter(country %in% c("China", "France", "Ireland", "India", "Chad", 
+                        "Mexico", "Papua New Guinea", "South Africa", "Ukraine", 
+                        "United Kingdom", "United States", "Central African Republic", 
+                        "Brazil") & year >= 2018)
+ggplot(filtered_data_3) +
+  aes(`Life expectancy at birth, total (years)`, `GDP per capita (constant 2015 US$)`, color = country) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method="lm", se=FALSE, aes(group=1), color="black", linetype="dashed") +
+  labs(
+    title = "Scatterplot of relationship between life expectancy and GDP per capita",
+    subtitle = "Legend shows selected countries",
+    x = "Life expectancy",
+    y = "GDP per capita"
+  ) +
+  theme_grey()
+```
+
+# Barchart analysis - Global coverage of Hep-B vaccine in 2022
+
+```{r}
+#| fig-cap: "<em>Analysing the specifics, we compare the hepatitis B vaccination coverage in 2022. This is across certain selected countries. This graph doesn't only showcase the achievements in vaccine delivery but also puts a focus on the gaps that still exist. The changes in coverage rates from countries like Ireland and the United Kingdom to lower rates in Papua New Guinea and the Central African Republic illustrate the 'unbalanced' landscape of global health efforts, suggestng for targeted interventions.</em>"
+
+ggplot(myjoin_2022_countries) +
+  aes(country, obs_value, fill = country) +
+  geom_col() +
+  labs(
+    title = "Bar chart showing Hep-B coverage in 2022",
+    subtitle = "Legend shows selected countries",
+    x = "Country",
+    y = "Indicator %"
+  ) +
+  theme_grey()
+```
+# General Recomendations to fix said problems
+
+- **Increase Funding**
+  - Allocate more resources towards developing global health initiatives, particularly in relation to vaccines.
+
+- **Improve Access**
+  - Enhance greater accessibility towards basic healthcare services and clean water within under-served regions.
+
+- **Boost Healthcare Infrastructure**
+  - Invest more into healthcare systems, especially in low-coverage regions.
+
+- **Foster International Cooperation**
+  - Encourage greater collaboration between countries to promote more sharing of resources and knowledge.
+
+- **Monitor and Evaluate**
+  - Continuously monitor health outcomes and adjust implemented strategies based on data-driven insights.
+  
+# Conclusion
+
+Analysing the data and stories shown in this dashboard, it becomes clear that the development towards global health is complex. It requires a difficult approach. There is the requirement of combining efforts in vaccination, accessibility to basic services and economic development. This dashboard indicates a need for action, directed at policymakers and communities worldwide. There needs to be collective action taken to change the trends shown as part of this dashboard.
+
+
